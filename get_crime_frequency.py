@@ -15,10 +15,7 @@ def get_crime_frequency_from_table(
 ) -> Tuple[pd.DataFrame, int]:
     """
     Function: gives you frequency of the crime (Jennie)
-    Given the center (lat, lon), radius r (int),
-    starting time(datetime), end time(datetime)
-    → numbers of crime that happened in radius R
-    between xxx period of time.
+
     """
     df = table.copy()
 
