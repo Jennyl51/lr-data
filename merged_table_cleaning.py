@@ -42,3 +42,5 @@ print(data.head())
 # save cleaned data as a new CSV file
 data.to_csv("C:/Users/garden/Desktop/univ/3-2/openpj/Data/merged_table_cleaned.csv", index=False)
 
+
+# pr practice
