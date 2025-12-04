@@ -1,0 +1,120 @@
+
+import { parseISO, differenceInDays } from "date-fns";
+
+const NEWS_API_KEY = process.env.NEWS_API_KEY!;
+const NEWS_API_URL = "https://newsapi.org/v2";
+
+
+if (!NEWS_API_KEY) {
+  throw new Error("Missing NEWS_API_KEY environment variable");
+}
+
+const CRIME_KEYWORDS = [
+  "crime", "robbery", "assault", "shooting", "theft",
+  "burglary", "homicide", "arrest", "police investigation",
+  "vandalism", "hate crime", "kidnapping"
+];
+
+export class CrimeNewsService {
+  //request
+  private async request(endpoint: string, params: Record<string, string>) {
+    const query = new URLSearchParams({
+      ...params,
+      apiKey: NEWS_API_KEY  
+    });
+
+    const url = `${NEWS_API_URL}${endpoint}?${query.toString()}`;
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error(`News API error: ${res.status}`);
+
+    return res.json();
+  }
+
+ //search crime news for berkeley location
+  async searchCrimeNews(location: string = "Berkeley") {
+    const q = `${location} (${CRIME_KEYWORDS.join(" OR ")})`;
+
+    return this.request("/everything", {
+      q,
+      sortBy: "publishedAt",
+      language: "en",
+      pageSize: "50"
+    });
+  }
+
+  //search by keywords
+  async searchByKeywords(...keywords: string[]) {
+    return this.request("/everything", {
+      q: keywords.join(" OR "),
+      sortBy: "publishedAt",
+      language: "en"
+    });
+  }
+
+  //search by date range
+  async searchByDateRange(startDate: string, endDate: string) {
+    return this.request("/everything", {
+      q: CRIME_KEYWORDS.join(" OR "),
+      from: startDate,
+      to: endDate,
+      language: "en"
+    });
+  }
+
+  //find recent crime within n days
+  async findRecentCrime(location: string, daysAgo: number) {
+    const data = await this.searchCrimeNews(location);
+
+    return data.articles.filter((article: any) => {
+      const published = parseISO(article.publishedAt);
+      return differenceInDays(new Date(), published) <= daysAgo;
+    });
+  }
+
+  //categorize crime by type
+  categorizeArticle(article: any): string {
+    const text = `${article.title} ${article.description}`.toLowerCase();
+
+    if (text.includes("shooting")) return "Shooting";
+    if (text.includes("robbery")) return "Robbery";
+    if (text.includes("burglary")) return "Burglary";
+    if (text.includes("assault")) return "Assault";
+    if (text.includes("homicide") || text.includes("murder")) return "Homicide";
+    if (text.includes("vandalism")) return "Vandalism";
+    if (text.includes("kidnapping")) return "Kidnapping";
+
+    return "Other";
+  }
+
+  //useful fields
+  extractUsefulFields(articles: any[]) {
+    return articles.map((a) => ({
+      title: a.title,
+      source: a.source.name,
+      publishedAt: a.publishedAt,
+      description: a.description,
+      url: a.url,
+      imageUrl: a.urlToImage,
+      crimeType: this.categorizeArticle(a)
+    }));
+  }
+
+  // convert articles to csv
+  toCSV(articles: any[]) {
+    const headers = [
+      "title","source","publishedAt","description","url","imageUrl","crimeType"
+    ];
+
+    const rows = articles.map((a) =>
+      headers.map((h) =>
+        `"${(a[h] ?? "").toString().replace(/"/g, '""')}"`
+      ).join(",")
+    );
+
+    return [headers.join(","), ...rows].join("\n");
+  }
+}
+
+//export an instance
+export const crimeNewsService = new CrimeNewsService();
