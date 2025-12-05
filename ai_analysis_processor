@@ -1,0 +1,16 @@
+# work in progress. sorry!!
+from openai import OpenAI
+from pydantic import BaseModel, Field
+from typing import Dict, Literal
+class CrimeAnalysis(BaseModel):
+
+
+def content_analyzer(email_content: str, source_url: str) -> dict:
+    if not os.getenv("OPENAI_API_KEY"):
+        return {"Crime_Type": "API_ERROR", "Short_Summary": "OpenAI Key missing."}
+        system_prompt = (
+        "Accurately extract the required crime incident details "
+        "from the provided text and strictly output the result in the specified JSON format."
+    )
+    user_prompt = f"Analyze the incident report from source {source_url} and extract the details: \n\nCONTENT: \"{email_content}\""
+    

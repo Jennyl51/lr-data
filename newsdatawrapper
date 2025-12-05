@@ -1,0 +1,70 @@
+import json
+import requests
+import os
+from typing import Optional, Tuple, List, Dict, Any
+
+# Read API Key from environment variable
+NEWS_DATA_API_KEY = os.getenv("NEWS_DATA_API_KEY")
+# saved key 
+if not NEWS_DATA_API_KEY:
+    raise ValueError("NEWS_DATA_API_KEY environment variable not set.")
+
+NEWS_DATA_BASE_URL = "https://newsdata.io/api/1/news"
+
+
+def search_news(
+    incident_word: str, 
+    incident_date: str
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Search News Data API for articles related to a specific incident
+    incident_word = keyword to search for incident (i.e. "robbery")
+    incident_date = date of the incident in YYYY-MM-DD format
+    Returns a tuple of (title, link) of the first relevant article found, or (None, None) if no articles found.
+    """
+    if not NEWS_DATA_API_KEY:
+        print("  > ERROR: NewsData API Key is missing.")
+        return None, None
+    params = {
+        "apikey": NEWS_DATA_API_KEY,
+        "q": incident_word,
+        "from_date": incident_date,
+        "to_date": incident_date,
+        "language": "en",
+        "country": "us",
+        "size": 1
+    }
+    try:
+        response = requests.get(NEWS_DATA_BASE_URL, params=params)
+        if response.status_code >= 400:
+            print(f"  > ERROR: NewsData API request failed with status code {response.status_code}")
+            # Prints the reason provided by the server 
+            print(f"  > Server message: {response.reason}")
+            return None, None
+        data = response.json()
+        if data.get('results'):
+            article = data['results'][0]
+            content = article.get('content') or article.get('description')
+            url = article.get('link')
+            
+            if content and url:
+                print(f"  > Found article: {article.get('title')[:40]}...")
+                return content, url
+            print("  > No articles found.")
+            # No articles found if content and url are missing
+        return None, None
+    except requests.exceptions.RequestException as e:
+        print(f"  > Connection Error: {e}")
+        return None, None
+    def get_simulated_incident_data():
+    """Simulated BPD data for testing the full process."""
+    return [{
+        "Incident_Number": "2025-0012345",
+        "CreateDatetime": "2025-03-15T14:30:00Z",
+        "Call_Type": "911-Robbery In Progress",
+        "Block_Address": "2400 Block Shattuck Ave",
+        "Statute_Description": "Robbery" 
+    }]
+    
+    print(f"Searching News Data API for {incident_word} on {incident_date}")
+
